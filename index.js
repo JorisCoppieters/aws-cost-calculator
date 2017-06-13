@@ -5,7 +5,10 @@
 // ******************************
 //
 //
-// AWS COST CALCULATOR v1.0.4
+// AWS COST CALCULATOR v1.0.6
+//
+// 1.0.6
+// - Added better default to days
 //
 // 1.0.5
 // - Adjusted package so this can be run as a standalone util
@@ -54,6 +57,7 @@ var g_STORAGE_PRICES = {
 };
 
 var g_INSTANCE_SPOT_CHANCES = {
+  "t2.micro": 0.74,
   "t2.small": 0.81,
   "t2.medium": 0.88,
   "c4.large": 0.935
@@ -65,6 +69,7 @@ var g_NAT_PER_GB = 0.059;
 
 var g_USD_EXCHANGE_RATE = 0.7008;
 var g_DAYS_IN_MONTH = 31;
+var g_DAY_OF_MONTH = new Date().getDate();
 
 var g_ENABLE_SPOT_PRICING = true;
 var g_ENABLE_TAKE_DOWN = true;
@@ -90,7 +95,7 @@ if (g_ARGV['help']) {
     help.printVersion();
 } else {
     var schema = g_ARGV['schema'];
-    var num_days = g_ARGV['days'] || 1;
+    var num_days = g_ARGV['days'] || g_DAY_OF_MONTH;
     var full_report = g_ARGV['full'];
     var disable_spot_pricing = g_ARGV['no-spot-pricing'];
     var disable_take_down = g_ARGV['no-take-down'];
