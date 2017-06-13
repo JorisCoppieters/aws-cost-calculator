@@ -1,9 +1,11 @@
+#!/usr/bin/env node
+
 'use strict'; // JS: ES5
 
 // ******************************
 //
 //
-// AWS COST CALCULATOR v1.0.2
+// AWS COST CALCULATOR v1.0.3
 //
 // 1.0.0
 // - Initial release
