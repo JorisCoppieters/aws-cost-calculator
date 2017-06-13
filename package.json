@@ -1,6 +1,6 @@
 {
   "name": "aws-cost-calculator",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Calculate the future cost of your AWS setup",
   "main": "index.js",
   "scripts": {
@@ -16,6 +16,10 @@
     "url": "https://github.com/JorisCoppieters/aws-cost-calculator/issues"
   },
   "homepage": "https://github.com/JorisCoppieters/aws-cost-calculator#readme",
+  "dependencies": {
+    "color-print": "^1.0.2",
+    "minimist": "^1.2.0"
+  },
   "devDependencies": {
     "color-print": "^1.0.2",
     "minimist": "^1.2.0"
