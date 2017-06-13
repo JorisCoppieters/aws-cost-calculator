@@ -26,7 +26,7 @@ function ask {
 
 echo "Updating version number in files..."
 sed -i "s/\/\/ AWS COST CALCULATOR v.*/\/\/ AWS COST CALCULATOR v$VERSION/g" index.js
-sed -i "s/const k_VERSION = '.*';/const k_VERSION = '$VERSION';/g" index.js
+sed -i "s/const c_VERSION = '.*';/const c_VERSION = '$VERSION';/g" src/constants.js
 sed -i "s/\"version\": \".*\",/\"version\": \"$VERSION\",/g" package.json
 
 if [[ `ask "Do you want to publish $VERSION?" && echo true` == true ]]; then
