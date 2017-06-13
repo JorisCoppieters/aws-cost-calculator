@@ -5,7 +5,10 @@
 // ******************************
 //
 //
-// AWS COST CALCULATOR v1.0.6
+// AWS COST CALCULATOR v1.0.7
+//
+// 1.0.7
+// - Fixed disable flags
 //
 // 1.0.6
 // - Added better default to days
