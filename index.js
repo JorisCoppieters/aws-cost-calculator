@@ -97,14 +97,14 @@ if (g_ARGV['help']) {
     var schema = g_ARGV['schema'];
     var num_days = g_ARGV['days'] || g_DAY_OF_MONTH;
     var full_report = g_ARGV['full'];
-    var disable_spot_pricing = g_ARGV['no-spot-pricing'];
-    var disable_take_down = g_ARGV['no-take-down'];
-    var disable_free_tier = g_ARGV['no-free-tier'];
+    var spot_pricing = g_ARGV['spot-pricing'];
+    var take_down = g_ARGV['take-down'];
+    var free_tier = g_ARGV['free-tier'];
 
     if (!schema) {
         help.printHelp('Please specifiy a schema');
     } else {
-        printAwsCosts(schema, num_days, full_report, disable_spot_pricing, disable_take_down, disable_free_tier);
+        printAwsCosts(schema, num_days, full_report, spot_pricing, take_down, free_tier);
     }
 }
 
@@ -112,7 +112,7 @@ if (g_ARGV['help']) {
 // Functions:
 // ******************************
 
-function printAwsCosts (in_schema, in_num_days, in_full_report, in_disable_spot_pricing, in_disable_take_down, in_disable_free_tier) {
+function printAwsCosts (in_schema, in_num_days, in_full_report, in_spot_pricing, in_take_down, in_free_tier) {
     do
     {
         if (!fs.existsSync(in_schema)) {
@@ -125,9 +125,9 @@ function printAwsCosts (in_schema, in_num_days, in_full_report, in_disable_spot_
 
         var terminal_width = 136; // TODO
 
-        g_ENABLE_SPOT_PRICING = !in_disable_spot_pricing;
-        g_ENABLE_TAKE_DOWN = !in_disable_take_down;
-        g_ENABLE_FREE_TIER = !in_disable_free_tier;
+        g_ENABLE_SPOT_PRICING = in_spot_pricing !== false;
+        g_ENABLE_TAKE_DOWN = in_take_down !== false;
+        g_ENABLE_FREE_TIER = in_free_tier !== false;
 
         var period_elb = 0;
         var period_nat_gb = 0;
