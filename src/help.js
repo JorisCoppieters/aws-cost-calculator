@@ -26,8 +26,8 @@ function printHelp (in_message) {
     console.log(cprint.toWhite('--version') + '\t\t' + cprint.toCyan('Print the version'));
     console.log();
     cprint.green('Flags:');
-    console.log(cprint.toWhite('--schema') + '\t\t' + cprint.toCyan('Schema to use for cost calculations'));
-    console.log(cprint.toWhite('--days') + '\t\t\t' + cprint.toCyan('Number of days to project costs over'));
+    console.log(cprint.toWhite('--schema [FILE]') + '\t\t' + cprint.toCyan('Schema to use for cost calculations'));
+    console.log(cprint.toWhite('--days [NUMBER]') + '\t\t' + cprint.toCyan('Number of days to project costs over'));
     console.log(cprint.toWhite('--full') + '\t\t\t' + cprint.toCyan('Show full report'));
     console.log(cprint.toWhite('--no-spot-pricing') + '\t' + cprint.toCyan('Disable spot pricing'));
     console.log(cprint.toWhite('--no-take-down') + '\t\t' + cprint.toCyan('Disable take down'));

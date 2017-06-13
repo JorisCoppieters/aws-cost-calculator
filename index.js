@@ -5,7 +5,11 @@
 // ******************************
 //
 //
-// AWS COST CALCULATOR v1.0.3
+// AWS COST CALCULATOR v1.0.4
+//
+// 1.0.5
+// - Adjusted package so this can be run as a standalone util
+// - Improved help text
 //
 // 1.0.0
 // - Initial release
