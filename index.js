@@ -39,19 +39,77 @@ var help = require('./src/help');
 var STR_PAD_LEFT = '[STR_PAD_LEFT]';
 var STR_PAD_RIGHT = '[STR_PAD_RIGHT]';
 
+var INSTANCE_SCHEDULE_TEST_TAKE_DOWN = 'TEST_TAKE_DOWN';
+var INSTANCE_SCHEDULE_MANUAL = 'MANUAL';
+var INSTANCE_SCHEDULE_OFF = 'OFF';
+var INSTANCE_SCHEDULE_24_7 = '24_7';
+
 // ******************************
 // Globals:
 // ******************************
 
-var g_EXTRA_COSTS = 8;
-
 var g_INSTANCE_PRICES = {
-  "t2.nano": 0.008,
-  "t2.micro": 0.016,
-  "t2.small": 0.032,
-  "t2.medium": 0.064,
-  "c4.large": 0.13,
-  "spot": 0.019
+  "spot": 0.019,
+
+  't2.nano': 0.008,
+  't2.micro': 0.016,
+  't2.small': 0.032,
+  't2.medium': 0.064,
+  't2.large': 0.128,
+  't2.xlarge': 0.256,
+  't2.2xlarge': 0.512,
+  'm4.large': 0.125,
+  'm4.xlarge': 0.25,
+  'm4.2xlarge': 0.5,
+  'm4.4xlarge': 1,
+  'm4.10xlarge': 2.5,
+  'm4.16xlarge': 4,
+  'm3.medium': 0.093,
+  'm3.large': 0.186,
+  'm3.xlarge': 0.372,
+  'm3.2xlarge': 0.745,
+
+  'c4.large': 0.13,
+  'c4.xlarge': 0.261,
+  'c4.2xlarge': 0.522,
+  'c4.4xlarge': 1.042,
+  'c4.8xlarge': 2.085,
+  'c3.large': 0.132,
+  'c3.xlarge': 0.265,
+  'c3.2xlarge': 0.529,
+  'c3.4xlarge': 1.058,
+  'c3.8xlarge': 2.117,
+
+  'p2.xlarge': 1.542,
+  'p2.8xlarge': 12.336,
+  'p2.16xlarge': 24.672,
+  'g2.2xlarge': 0.898,
+  'g2.8xlarge': 3.592,
+
+  'x1.16xlarge': 9.671,
+  'x1.32xlarge': 19.341,
+  'r3.large': 0.2,
+  'r3.xlarge': 0.399,
+  'r3.2xlarge': 0.798,
+  'r3.4xlarge': 1.596,
+  'r3.8xlarge': 3.192,
+  'r4.large': 0.16,
+  'r4.xlarge': 0.319,
+  'r4.2xlarge': 0.638,
+  'r4.4xlarge': 1.277,
+  'r4.8xlarge': 2.554,
+  'r4.16xlarge': 5.107,
+
+  'i3.large': 0.187,
+  'i3.xlarge': 0.374,
+  'i3.2xlarge': 0.748,
+  'i3.4xlarge': 1.496,
+  'i3.8xlarge': 2.992,
+  'i3.16xlarge': 5.984,
+  'd2.xlarge': 0.87,
+  'd2.2xlarge': 1.74,
+  'd2.4xlarge': 3.48,
+  'd2.8xlarge': 6.96
 };
 
 var g_STORAGE_PRICES = {
@@ -138,7 +196,8 @@ function printAwsCosts (in_schema, in_num_days, in_full_report, in_spot_pricing,
         var period_storage_hours = 0;
         var period_instance_type_hours = {};
         var period_instance_type_number = {};
-        var extra_costs = g_EXTRA_COSTS;
+        var extra_costs = 0;
+        var extra_cost_lines = {};
 
         var months = parseInt(in_num_days / g_DAYS_IN_MONTH + 0.99999);
 
@@ -158,7 +217,8 @@ function printAwsCosts (in_schema, in_num_days, in_full_report, in_spot_pricing,
                 nat_configs.forEach(function(nat_config){
                     var nat_hours_per_day = jlib_get_property(nat_config, "hours_per_day", 24);
                     var nat_days_per_week = jlib_get_property(nat_config, "days_per_week", 7);
-                    var nat_uptime_hours = in_num_days * (nat_days_per_week / 7) * nat_hours_per_day;
+                    var nat_extra_hours = jlib_get_property(nat_config, "extra_hours", 0);
+                    var nat_uptime_hours = in_num_days * (nat_days_per_week / 7) * nat_hours_per_day + nat_extra_hours;
                     period_nat_hourly += nat_uptime_hours;
                     period_nat_gb += jlib_get_property(nat_config, "data_transfer", 0) * in_num_days;
                 });
@@ -171,7 +231,9 @@ function printAwsCosts (in_schema, in_num_days, in_full_report, in_spot_pricing,
                 var monthly_rate = jlib_get_property(service_config, "per_month", 0);
                 hourly_rate += monthly_rate / (g_DAYS_IN_MONTH * 24);
 
-                extra_costs += hourly_rate * in_num_days * 24;
+                var extra_cost = hourly_rate * in_num_days * 24;
+                extra_costs += extra_cost;
+                extra_cost_lines[service] = extra_cost;
                 return;
             }
 
@@ -214,19 +276,38 @@ function printAwsCosts (in_schema, in_num_days, in_full_report, in_spot_pricing,
                 var instance_ebs_storage = jlib_get_property(instance_config, "ebs", 0);
                 var instance_storage = instance_gp2_storage + instance_ebs_storage;
 
-                var instance_hours_per_day = jlib_get_property(instance_config, "hours_per_day", 24);
-                var instance_days_per_week = jlib_get_property(instance_config, "days_per_week", 7);
                 var instance_extra_hours = jlib_get_property(instance_config, "extra_hours", 0);
+                var instance_hours_per_day = jlib_get_property(instance_config, "hours_per_day", 0);
+                var instance_days_per_week = jlib_get_property(instance_config, "days_per_week", 0);
+                var instance_schedule = jlib_get_property(instance_config, "schedule", false);
 
                 if (! period_instance_type_number[instance_type])
                     period_instance_type_number[instance_type] = 0;
 
                 period_instance_type_number[instance_type] = period_instance_type_number[instance_type] + 1;
 
-                if (! g_ENABLE_TAKE_DOWN)
+                if (instance_schedule == INSTANCE_SCHEDULE_OFF)
+                {
+                    instance_hours_per_day = 0;
+                    instance_days_per_week = 0;
+                }
+                else if (instance_schedule == INSTANCE_SCHEDULE_24_7)
                 {
                     instance_hours_per_day = 24;
                     instance_days_per_week = 7;
+                }
+                else if (instance_schedule == INSTANCE_SCHEDULE_TEST_TAKE_DOWN)
+                {
+                    if (g_ENABLE_TAKE_DOWN)
+                    {
+                        instance_hours_per_day = 14;
+                        instance_days_per_week = 5;
+                    }
+                    else
+                    {
+                        instance_hours_per_day = 24;
+                        instance_days_per_week = 7;
+                    }
                 }
 
                 var instance_uptime_hours = in_num_days * (instance_days_per_week / 7) * instance_hours_per_day + instance_extra_hours;
@@ -373,6 +454,15 @@ function printAwsCosts (in_schema, in_num_days, in_full_report, in_spot_pricing,
             col_2.push("");
             col_2.push(cprint.toCyan("NAT DATA TRANSFER:", true));
             col_2.push("  " + cprint.toLightGray(to_decimal(period_nat_gb, 0), true) + " Gbs - " + cprint.toYellow(to_usd(period_nat_gb_cost, 0), true));
+            col_2.push("");
+            col_2.push(cprint.toCyan("EXTRA COSTS:", true));
+            Object.keys(extra_cost_lines).forEach((service, idx) => {
+                if (idx % 2 !== 0 || idx > 5) {
+                    return;
+                }
+                var extra_cost_line = extra_cost_lines[service];
+                col_2.push("  " + cprint.toLightGray(service, true) + " - " + cprint.toYellow(to_usd(extra_cost_line, 0), true));
+            });
         }
 
         var col_3 = [];
@@ -383,6 +473,15 @@ function printAwsCosts (in_schema, in_num_days, in_full_report, in_spot_pricing,
             col_3.push("");
             col_3.push(cprint.toCyan("STORAGE:", true));
             col_3.push("  " + cprint.toLightGray(to_decimal(period_storage_hours, 0), true) + " Gbs - " + cprint.toYellow(to_usd(period_storage_cost, 0), true));
+            col_3.push("");
+            col_3.push("");
+            Object.keys(extra_cost_lines).forEach((service, idx) => {
+                if (idx % 2 !== 1 || idx > 5) {
+                    return;
+                }
+                var extra_cost_line = extra_cost_lines[service];
+                col_3.push("  " + cprint.toLightGray(service, true) + " - " + cprint.toYellow(to_usd(extra_cost_line, 0), true));
+            });
         }
 
         var lines = [];
@@ -491,16 +590,7 @@ function sort_instances_array(in_instances_array)
     {
         var keysSorted = Object.keys(in_instances_array).sort(function(a, b) {
             function instanceRank(instance){
-                switch (instance)
-                {
-                    case "spot": return 100;
-                    case "t2.nano": return 210;
-                    case "t2.micro": return 220;
-                    case "t2.small": return 230;
-                    case "t2.medium": return 240;
-                    case "c4.large": return 350;
-                    default: return 0;
-                }
+                return Object.keys(g_INSTANCE_PRICES).indexOf(instance);
             }
             return instanceRank(a) - instanceRank(b);
         });
@@ -552,7 +642,7 @@ function to_decimal(in_number, in_col_width)
 
     var int_val = parseInt(in_number);
     var decimal_val = parseInt((in_number - int_val) * 100 + 0.5);
-    return str_pad(int_val + "." + str_pad(decimal_val, 2, "0"), in_col_width + 3, " ", STR_PAD_LEFT);
+    return str_pad(int_val + "." + str_pad(decimal_val, 2, "0").substring(0, 2), in_col_width + 3, " ", STR_PAD_LEFT);
 }
 
 // ******************************
