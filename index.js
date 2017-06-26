@@ -5,7 +5,13 @@
 // ******************************
 //
 //
-// AWS COST CALCULATOR v1.0.7
+// AWS COST CALCULATOR v1.0.8
+//
+// 1.0.8
+// - Added more instance types
+// - Added schedule types
+// - Added extra costs view
+// - Small bug fix to to_decimal function
 //
 // 1.0.7
 // - Fixed disable flags
