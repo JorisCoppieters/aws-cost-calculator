@@ -190,6 +190,9 @@ function printAwsCosts (in_schema, in_num_days, in_full_report, in_spot_pricing,
             cprint.yellow('Failed to load schema: ' + in_schema);
         }
 
+        set_instance_spot_chances(services);
+        set_instance_prices(services);
+
         var terminal_width = 136; // TODO
 
         g_ENABLE_SPOT_PRICING = in_spot_pricing !== false;
@@ -216,6 +219,11 @@ function printAwsCosts (in_schema, in_num_days, in_full_report, in_spot_pricing,
         Object.keys(services).forEach(function(service){
             var service_config = services[service];
             var type = jlib_get_property(service_config, "type", false);
+
+            if (service === "__config")
+            {
+                return;
+            }
 
             if (type === "nat")
             {
@@ -567,6 +575,26 @@ function get_instance_price(in_instance_type)
 
 // ******************************
 
+function set_instance_prices(in_schema)
+{
+    var result = false;
+
+    do
+    {
+        var config = jlib_get_property(in_schema, "__config", {});
+        var prices = jlib_get_property(config, "prices", {});
+        Object.keys(prices).forEach(function(instance_type) {
+            var price = prices[instance_type];
+            g_INSTANCE_PRICES[instance_type] = price;
+        });
+    }
+    while (false);
+
+    return result;
+}
+
+// ******************************
+
 function get_instance_spot_chance(in_instance_type)
 {
     var result = false;
@@ -580,6 +608,26 @@ function get_instance_spot_chance(in_instance_type)
         }
 
         result = g_INSTANCE_SPOT_CHANCES[in_instance_type];
+    }
+    while (false);
+
+    return result;
+}
+
+// ******************************
+
+function set_instance_spot_chances(in_schema)
+{
+    var result = false;
+
+    do
+    {
+        var config = jlib_get_property(in_schema, "__config", {});
+        var spot_chances = jlib_get_property(config, "spot_chances", {});
+        Object.keys(spot_chances).forEach(function(instance_type) {
+            var spot_chance = spot_chances[instance_type];
+            g_INSTANCE_SPOT_CHANCES[instance_type] = spot_chance;
+        });
     }
     while (false);
 
