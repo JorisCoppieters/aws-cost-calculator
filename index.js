@@ -343,8 +343,6 @@ function calculateCosts (in_schema, in_num_days, in_full_report, in_spot_pricing
                 incBucketValue(general_bucket, 'period_storage_hours', period_storage_hours_inc);
                 incBucketValue(bucket, 'period_storage_hours', period_storage_hours_inc);
 
-                console.log(getBucketValue(general_bucket, 'period_storage_hours'));
-
                 let period_instance_on_demand_hours = instance_uptime_hours;
                 let period_instance_spot_hours = 0;
 
@@ -397,7 +395,6 @@ function calculateCostsForBucket (in_bucket) {
         let period_nat_gb = getBucketValue(in_bucket, 'period_nat_gb');
         let period_nat_hourly = getBucketValue(in_bucket, 'period_nat_hourly');
         let period_storage_hours = getBucketValue(in_bucket, 'period_storage_hours');
-        console.log(period_storage_hours);
         let period_instance_type_hours = getBucketValue(in_bucket, 'period_instance_type_hours');
         let period_instance_type_number = getBucketValue(in_bucket, 'period_instance_type_number');
         let extra_costs = getBucketValue(in_bucket, 'extra_costs');
@@ -651,8 +648,8 @@ function setBucketValue (in_bucket, in_key, in_val) {
 // ******************************
 
 function incBucketValue (in_bucket, in_key, in_inc) {
-    let bucketValue = parseInt(getBucketValue(in_bucket, in_key)) || 0;
-    setBucketValue(in_bucket, in_key, bucketValue + parseInt(in_inc));
+    let bucketValue = parseFloat(getBucketValue(in_bucket, in_key)) || 0;
+    setBucketValue(in_bucket, in_key, bucketValue + parseFloat(in_inc));
 }
 
 // ******************************
@@ -667,7 +664,7 @@ function setBucketArrayValue (in_bucket, in_key, in_idx, in_val) {
 
 function incBucketArrayValue (in_bucket, in_key, in_idx, in_inc) {
     let bucketArrayValue = getBucketValue(in_bucket, in_key) || [];
-    bucketArrayValue[in_idx] = (parseInt(bucketArrayValue[in_idx]) || 0) + parseInt(in_inc);
+    bucketArrayValue[in_idx] = (parseFloat(bucketArrayValue[in_idx]) || 0) + parseFloat(in_inc);
     setBucketValue(in_bucket, in_key, bucketArrayValue);
 }
 
