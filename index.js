@@ -182,13 +182,26 @@ if (g_ARGV['help']) {
 // ******************************
 
 function printAwsCosts (in_schema, in_num_days, in_full_report, in_spot_pricing, in_take_down, in_free_tier) {
-    calculateCosts(in_schema, in_num_days, in_full_report, in_spot_pricing, in_take_down, in_free_tier);
-    printCosts(in_num_days, in_full_report);
+    calculateBucketValues(in_schema, in_num_days, in_full_report, in_spot_pricing, in_take_down, in_free_tier);
+    printCosts('ALL', in_num_days, in_full_report);
+
+    let tot = 0;
+
+    Object.keys(g_BUCKETS).forEach(b => {
+      if (b === 'ALL') {
+        return;
+      }
+      let total_usd = getBucketValue(b, 'total_usd');
+      tot += total_usd;
+      console.log(total_usd);
+    });
+
+    console.log(tot);
 }
 
 // ******************************
 
-function calculateCosts (in_schema, in_num_days, in_full_report, in_spot_pricing, in_take_down, in_free_tier) {
+function calculateBucketValues (in_schema, in_num_days, in_full_report, in_spot_pricing, in_take_down, in_free_tier) {
     do
     {
         if (!fs.existsSync(in_schema)) {
@@ -381,7 +394,9 @@ function calculateCosts (in_schema, in_num_days, in_full_report, in_spot_pricing
                 getBucketArrayValue(general_bucket, 'period_instance_type_hours', 't2.micro')));
         }
 
-        calculateCostsForBucket(general_bucket);
+        Object.keys(g_BUCKETS).forEach(b => {
+            calculateCostsForBucket(b);
+        });
     }
     while (false);
 }
@@ -391,14 +406,14 @@ function calculateCosts (in_schema, in_num_days, in_full_report, in_spot_pricing
 function calculateCostsForBucket (in_bucket) {
     do
     {
-        let period_elb = getBucketValue(in_bucket, 'period_elb');
-        let period_nat_gb = getBucketValue(in_bucket, 'period_nat_gb');
-        let period_nat_hourly = getBucketValue(in_bucket, 'period_nat_hourly');
-        let period_storage_hours = getBucketValue(in_bucket, 'period_storage_hours');
-        let period_instance_type_hours = getBucketValue(in_bucket, 'period_instance_type_hours');
-        let period_instance_type_number = getBucketValue(in_bucket, 'period_instance_type_number');
-        let extra_costs = getBucketValue(in_bucket, 'extra_costs');
-        let extra_cost_lines = getBucketValue(in_bucket, 'extra_cost_lines');
+        let period_elb = getBucketValue(in_bucket, 'period_elb') || 0;
+        let period_nat_gb = getBucketValue(in_bucket, 'period_nat_gb') || 0;
+        let period_nat_hourly = getBucketValue(in_bucket, 'period_nat_hourly') || 0;
+        let period_storage_hours = getBucketValue(in_bucket, 'period_storage_hours') || 0;
+        let period_instance_type_hours = getBucketValue(in_bucket, 'period_instance_type_hours') || [];
+        let period_instance_type_number = getBucketValue(in_bucket, 'period_instance_type_number') || [];
+        let extra_costs = getBucketValue(in_bucket, 'extra_costs') || 0;
+        let extra_cost_lines = getBucketValue(in_bucket, 'extra_cost_lines') || [];
 
         let hourly_storage_cost = get_storage_price('gp2') / (24 * 30);
         let period_storage_cost = period_storage_hours * hourly_storage_cost;
@@ -433,54 +448,53 @@ function calculateCostsForBucket (in_bucket) {
 
         let total_usd = subtotal + extra_costs + gst;
 
-        setBucketValue(in_bucket, 'extra_cost_lines', extra_cost_lines);
-        setBucketValue(in_bucket, 'extra_costs', extra_costs);
-        setBucketValue(in_bucket, 'gst', gst);
-        setBucketValue(in_bucket, 'hourly_storage_cost', hourly_storage_cost);
-        setBucketValue(in_bucket, 'period_elb', period_elb);
-        setBucketValue(in_bucket, 'period_elb_cost', period_elb_cost);
-        setBucketValue(in_bucket, 'period_elb_hours', period_elb_hours);
-        setBucketValue(in_bucket, 'period_instance_type_costs', period_instance_type_costs);
-        setBucketValue(in_bucket, 'period_instance_type_hours', period_instance_type_hours);
-        setBucketValue(in_bucket, 'period_instance_type_number', period_instance_type_number);
-        setBucketValue(in_bucket, 'period_nat_cost', period_nat_cost);
-        setBucketValue(in_bucket, 'period_nat_gb', period_nat_gb);
-        setBucketValue(in_bucket, 'period_nat_gb_cost', period_nat_gb_cost);
-        setBucketValue(in_bucket, 'period_nat_hourly', period_nat_hourly);
-        setBucketValue(in_bucket, 'period_nat_hourly_cost', period_nat_hourly_cost);
-        setBucketValue(in_bucket, 'period_storage_cost', period_storage_cost);
-        setBucketValue(in_bucket, 'period_storage_hours', period_storage_hours);
-        setBucketValue(in_bucket, 'subtotal', subtotal);
-        setBucketValue(in_bucket, 'total_period_instance_type_costs', total_period_instance_type_costs);
-        setBucketValue(in_bucket, 'total_usd', total_usd);
+        setBucketValue(in_bucket, 'extra_cost_lines', extra_cost_lines || []);
+        setBucketValue(in_bucket, 'extra_costs', extra_costs || 0);
+        setBucketValue(in_bucket, 'gst', gst || 0);
+        setBucketValue(in_bucket, 'hourly_storage_cost', hourly_storage_cost || 0);
+        setBucketValue(in_bucket, 'period_elb', period_elb || 0);
+        setBucketValue(in_bucket, 'period_elb_cost', period_elb_cost || 0);
+        setBucketValue(in_bucket, 'period_elb_hours', period_elb_hours || 0);
+        setBucketValue(in_bucket, 'period_instance_type_costs', period_instance_type_costs || []);
+        setBucketValue(in_bucket, 'period_instance_type_hours', period_instance_type_hours || []);
+        setBucketValue(in_bucket, 'period_instance_type_number', period_instance_type_number || []);
+        setBucketValue(in_bucket, 'period_nat_cost', period_nat_cost || 0);
+        setBucketValue(in_bucket, 'period_nat_gb', period_nat_gb || 0);
+        setBucketValue(in_bucket, 'period_nat_gb_cost', period_nat_gb_cost || 0);
+        setBucketValue(in_bucket, 'period_nat_hourly', period_nat_hourly || 0);
+        setBucketValue(in_bucket, 'period_nat_hourly_cost', period_nat_hourly_cost || 0);
+        setBucketValue(in_bucket, 'period_storage_cost', period_storage_cost || 0);
+        setBucketValue(in_bucket, 'period_storage_hours', period_storage_hours || 0);
+        setBucketValue(in_bucket, 'subtotal', subtotal || 0);
+        setBucketValue(in_bucket, 'total_period_instance_type_costs', total_period_instance_type_costs || 0);
+        setBucketValue(in_bucket, 'total_usd', total_usd || 0);
     }
     while (false);
 }
 
 // ******************************
 
-function printCosts (in_num_days, in_full_report) {
-    let general_bucket = 'ALL';
-    let extra_cost_lines = getBucketValue(general_bucket, 'extra_cost_lines');
-    let extra_costs = getBucketValue(general_bucket, 'extra_costs');
-    let gst = getBucketValue(general_bucket, 'gst');
-    let hourly_storage_cost = getBucketValue(general_bucket, 'hourly_storage_cost');
-    let period_elb = getBucketValue(general_bucket, 'period_elb');
-    let period_elb_cost = getBucketValue(general_bucket, 'period_elb_cost');
-    let period_elb_hours = getBucketValue(general_bucket, 'period_elb_hours');
-    let period_instance_type_costs = getBucketValue(general_bucket, 'period_instance_type_costs');
-    let period_instance_type_hours = getBucketValue(general_bucket, 'period_instance_type_hours');
-    let period_instance_type_number = getBucketValue(general_bucket, 'period_instance_type_number');
-    let period_nat_cost = getBucketValue(general_bucket, 'period_nat_cost');
-    let period_nat_gb = getBucketValue(general_bucket, 'period_nat_gb');
-    let period_nat_gb_cost = getBucketValue(general_bucket, 'period_nat_gb_cost');
-    let period_nat_hourly = getBucketValue(general_bucket, 'period_nat_hourly');
-    let period_nat_hourly_cost = getBucketValue(general_bucket, 'period_nat_hourly_cost');
-    let period_storage_cost = getBucketValue(general_bucket, 'period_storage_cost');
-    let period_storage_hours = getBucketValue(general_bucket, 'period_storage_hours');
-    let subtotal = getBucketValue(general_bucket, 'subtotal');
-    let total_period_instance_type_costs = getBucketValue(general_bucket, 'total_period_instance_type_costs');
-    let total_usd = getBucketValue(general_bucket, 'total_usd');
+function printCosts (in_bucket, in_num_days, in_full_report) {
+    let extra_cost_lines = getBucketValue(in_bucket, 'extra_cost_lines');
+    let extra_costs = getBucketValue(in_bucket, 'extra_costs');
+    let gst = getBucketValue(in_bucket, 'gst');
+    let hourly_storage_cost = getBucketValue(in_bucket, 'hourly_storage_cost');
+    let period_elb = getBucketValue(in_bucket, 'period_elb');
+    let period_elb_cost = getBucketValue(in_bucket, 'period_elb_cost');
+    let period_elb_hours = getBucketValue(in_bucket, 'period_elb_hours');
+    let period_instance_type_costs = getBucketValue(in_bucket, 'period_instance_type_costs');
+    let period_instance_type_hours = getBucketValue(in_bucket, 'period_instance_type_hours');
+    let period_instance_type_number = getBucketValue(in_bucket, 'period_instance_type_number');
+    let period_nat_cost = getBucketValue(in_bucket, 'period_nat_cost');
+    let period_nat_gb = getBucketValue(in_bucket, 'period_nat_gb');
+    let period_nat_gb_cost = getBucketValue(in_bucket, 'period_nat_gb_cost');
+    let period_nat_hourly = getBucketValue(in_bucket, 'period_nat_hourly');
+    let period_nat_hourly_cost = getBucketValue(in_bucket, 'period_nat_hourly_cost');
+    let period_storage_cost = getBucketValue(in_bucket, 'period_storage_cost');
+    let period_storage_hours = getBucketValue(in_bucket, 'period_storage_hours');
+    let subtotal = getBucketValue(in_bucket, 'subtotal');
+    let total_period_instance_type_costs = getBucketValue(in_bucket, 'total_period_instance_type_costs');
+    let total_usd = getBucketValue(in_bucket, 'total_usd');
 
     let col_1 = [];
 
