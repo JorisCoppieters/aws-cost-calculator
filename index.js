@@ -212,7 +212,7 @@ function calculateCosts (in_schema, in_num_days, in_full_report, in_spot_pricing
 
         if (g_ENABLE_FREE_TIER)
         {
-            setBucketArrayValue(general_bucket, 'period_storage_hours', -g_FREE_SSD_STORAGE * 24 * g_DAYS_IN_MONTH * months); // Free storage
+            setBucketValue(general_bucket, 'period_storage_hours', -g_FREE_SSD_STORAGE * 24 * g_DAYS_IN_MONTH * months); // Free storage
             setBucketArrayValue(general_bucket, 'period_instance_type_hours', 't2.micro', -g_FREE_MICRO_INSTANCE_HOURS * months); // Free micro usage
         }
 
@@ -294,8 +294,6 @@ function calculateCosts (in_schema, in_num_days, in_full_report, in_spot_pricing
                 if (jlib_get_property(prod_config, 'elb'))
                     period_elb_inc += 24 * in_num_days;
             }
-
-            console.log(period_elb_inc);
 
             incBucketValue(general_bucket, 'period_elb', period_elb_inc);
             incBucketValue(bucket, 'period_elb', period_elb_inc);
