@@ -136,6 +136,8 @@ let g_ELB_PER_HOUR = 0.028;
 let g_NAT_PER_HOUR = 0.059;
 let g_NAT_PER_GB = 0.059;
 
+let g_ELB_USAGE_RATIO = 0.8;
+
 let g_USD_EXCHANGE_RATE = 0.7008;
 let g_DAYS_IN_MONTH = 31;
 let g_DAY_OF_MONTH = new Date().getDate();
@@ -144,7 +146,7 @@ let g_ENABLE_SPOT_PRICING = true;
 let g_ENABLE_TAKE_DOWN = true;
 let g_ENABLE_FREE_TIER = true;
 
-let g_FREE_SSD_STORAGE = 30;
+let g_FREE_EBS_STORAGE = 30;
 let g_FREE_MICRO_INSTANCE_HOURS = 750;
 let g_FREE_ELB_HOURS = 750;
 
@@ -215,12 +217,10 @@ function calculateBucketValues (in_schema, in_num_days, in_full_report, in_spot_
 
         if (g_ENABLE_FREE_TIER)
         {
-            setBucketValue(ALL_BUCKET, 'free_elb_hours', g_FREE_ELB_HOURS); // Free elb hours
-            setBucketValue(ALL_BUCKET, 'period_storage_hours', -g_FREE_SSD_STORAGE * 24 * g_DAYS_IN_MONTH * months); // Free storage
+            setBucketValue(ALL_BUCKET, 'period_storage_hours', -g_FREE_EBS_STORAGE * 24 * g_DAYS_IN_MONTH * months); // Free storage
             setBucketArrayValue(ALL_BUCKET, 'period_instance_type_hours', 't2.micro', -g_FREE_MICRO_INSTANCE_HOURS * months); // Free micro usage
 
-            setBucketValue(free_tier_bucket, 'free_elb_hours', g_FREE_ELB_HOURS); // Free elb hours
-            setBucketValue(free_tier_bucket, 'period_storage_hours', -g_FREE_SSD_STORAGE * 24 * g_DAYS_IN_MONTH * months); // Free storage
+            setBucketValue(free_tier_bucket, 'period_storage_hours', -g_FREE_EBS_STORAGE * 24 * g_DAYS_IN_MONTH * months); // Free storage
             setBucketArrayValue(free_tier_bucket, 'period_instance_type_hours', 't2.micro', -g_FREE_MICRO_INSTANCE_HOURS * months); // Free micro usage
         }
 
@@ -304,15 +304,17 @@ function calculateBucketValues (in_schema, in_num_days, in_full_report, in_spot_
                     period_elb_inc += 24 * in_num_days;
             }
 
+            period_elb_inc = period_elb_inc * g_ELB_USAGE_RATIO;
+
             incBucketValue(ALL_BUCKET, 'period_elb', period_elb_inc);
             incBucketValue(bucket, 'period_elb', period_elb_inc);
 
             service_instances.forEach(instance_config => {
                 let instance_type = jlib_get_property(instance_config, 'type', 't2.micro');
 
-                let instance_gp2_storage = jlib_get_property(instance_config, 'ssd', 0);
+                let instance_ssd_storage = jlib_get_property(instance_config, 'ssd', 0);
                 let instance_ebs_storage = jlib_get_property(instance_config, 'ebs', 0);
-                let instance_storage = instance_gp2_storage + instance_ebs_storage;
+                let instance_storage = instance_ssd_storage + instance_ebs_storage;
 
                 let instance_extra_hours = jlib_get_property(instance_config, 'extra_hours', 0);
                 let instance_hours_per_day = jlib_get_property(instance_config, 'hours_per_day', 0);
@@ -396,19 +398,28 @@ function calculateBucketValues (in_schema, in_num_days, in_full_report, in_spot_
                 getBucketArrayValue(free_tier_bucket, 'period_instance_type_hours', 't2.micro')));
         }
 
-        Object.keys(g_BUCKETS).forEach(b => {
-            calculateCostsForBucket(b);
+        calculateCostsForBucket(ALL_BUCKET, {
+            free_elb_hours: g_FREE_ELB_HOURS
         });
+
+        let free_resources_state = {
+            free_elb_hours: g_FREE_ELB_HOURS
+        };
+        Object.keys(g_BUCKETS)
+            .filter(bucket => bucket !== ALL_BUCKET)
+            .forEach(bucket => {
+                calculateCostsForBucket(bucket, free_resources_state);
+            });
     }
     while (false);
 }
 
 // ******************************
 
-function calculateCostsForBucket (in_bucket) {
+function calculateCostsForBucket (in_bucket, in_free_resources) {
     do
     {
-        let free_elb_hours = getBucketValue(in_bucket, 'free_elb_hours') || 0;
+        let free_elb_hours = in_free_resources.free_elb_hours || 0;
         let period_elb = getBucketValue(in_bucket, 'period_elb') || 0;
         let period_nat_gb = getBucketValue(in_bucket, 'period_nat_gb') || 0;
         let period_nat_hourly = getBucketValue(in_bucket, 'period_nat_hourly') || 0;
@@ -418,7 +429,7 @@ function calculateCostsForBucket (in_bucket) {
         let extra_costs = getBucketValue(in_bucket, 'extra_costs') || 0;
         let extra_cost_lines = getBucketValue(in_bucket, 'extra_cost_lines') || [];
 
-        let hourly_storage_cost = get_storage_price('gp2') / (24 * 30);
+        let hourly_storage_cost = get_storage_price('gp2') / (24 * g_DAYS_IN_MONTH);
         let period_storage_cost = period_storage_hours * hourly_storage_cost;
 
         let period_nat_hourly_cost = period_nat_hourly * g_NAT_PER_HOUR;
@@ -441,6 +452,8 @@ function calculateCostsForBucket (in_bucket) {
 
         let period_elb_hours = Math.max(0, period_elb - free_elb_hours);
         let period_elb_cost = period_elb_hours * g_ELB_PER_HOUR;
+
+        in_free_resources.free_elb_hours = Math.max(0, free_elb_hours - period_elb);
 
         let subtotal_before_extra = total_period_instance_type_costs +
             period_elb_cost +
@@ -505,6 +518,11 @@ function printCosts (in_num_days, in_nzd, in_full_report, in_print_buckets) {
     let total_period_instance_type_costs = getBucketValue(main_bucket, 'total_period_instance_type_costs');
     let total_usd = getBucketValue(main_bucket, 'total_usd');
 
+    let period_storage_month = period_storage_hours / 24 / g_DAYS_IN_MONTH;
+
+    let max_extra_cost_lines = 8;
+    let max_bucket_lines = 8;
+
     let c_fn = in_nzd ? to_nzd : to_usd;
 
     let col_1 = [];
@@ -559,6 +577,13 @@ function printCosts (in_num_days, in_nzd, in_full_report, in_print_buckets) {
         col_1 = combine_columns(col_1, col_1_col_3, 5);
         col_1 = combine_columns(col_1, col_1_col_4, 5);
         col_1.push('');
+        col_1.push('');
+    }
+
+    if (in_full_report)
+    {
+        col_1.push('');
+        col_1.push('');
     }
 
     col_1.push(cprint.toCyan('INFRA COSTS: ', true) + cprint.toYellow(c_fn(subtotal_before_extra), true));
@@ -579,7 +604,7 @@ function printCosts (in_num_days, in_nzd, in_full_report, in_print_buckets) {
         col_2.push('');
         col_2.push(cprint.toCyan('EXTRA COSTS:', true));
         Object.keys(extra_cost_lines).forEach((service, idx) => {
-            if (idx % 2 !== 0 || idx > 5) {
+            if (idx % 2 !== 0 || idx >= max_extra_cost_lines) {
                 return;
             }
             let extra_cost_line = extra_cost_lines[service];
@@ -596,12 +621,13 @@ function printCosts (in_num_days, in_nzd, in_full_report, in_print_buckets) {
         Object.keys(g_BUCKETS)
             .filter(bucket => bucket !== ALL_BUCKET)
             .forEach((bucket, idx) => {
-                if (idx % 2 !== 0 || idx > 5) {
+                if (idx % 2 !== 0 || idx >= max_bucket_lines) {
                     return;
                 }
                 let bucket_cost = getBucketValue(bucket, 'total_usd');
                 col_2.push('  ' + cprint.toLightGray(bucket, true) + ' - ' + cprint.toYellow(c_fn(bucket_cost, 0), true));
             });
+        col_2.push('');
     }
 
     let col_3 = [];
@@ -611,15 +637,15 @@ function printCosts (in_num_days, in_nzd, in_full_report, in_print_buckets) {
         col_3.push('  ' + cprint.toLightGray(to_decimal(period_elb, 0), true) + ' h - ' + cprint.toYellow(c_fn(period_elb_cost, 0), true));
         col_3.push('');
         col_3.push(cprint.toCyan('STORAGE:', true));
-        col_3.push('  ' + cprint.toLightGray(to_decimal(period_storage_hours, 0), true) + ' Gbs - ' + cprint.toYellow(c_fn(period_storage_cost, 0), true));
+        col_3.push('  ' + cprint.toLightGray(to_decimal(period_storage_month, 0), true) + ' Gb/Mo - ' + cprint.toYellow(c_fn(period_storage_cost, 0), true));
         col_3.push('');
         col_3.push('');
         Object.keys(extra_cost_lines).forEach((service, idx) => {
-            if (idx % 2 !== 1 || idx > 5) {
+            if (idx % 2 !== 1 || idx >= max_extra_cost_lines) {
                 return;
             }
             let extra_cost_line = extra_cost_lines[service];
-            col_3.push('  ' + cprint.toLightGray(service, true) + ' - ' + cprint.toYellow(c_fn(extra_cost_line, 0), true));
+            col_3.push(cprint.toLightGray(service, true) + ' - ' + cprint.toYellow(c_fn(extra_cost_line, 0), true));
         });
         col_3.push('');
         col_3.push('');
@@ -631,12 +657,13 @@ function printCosts (in_num_days, in_nzd, in_full_report, in_print_buckets) {
         Object.keys(g_BUCKETS)
             .filter(bucket => bucket !== ALL_BUCKET)
             .forEach((bucket, idx) => {
-                if (idx % 2 !== 1 || idx > 5) {
+                if (idx % 2 !== 1 || idx >= max_bucket_lines) {
                     return;
                 }
                 let bucket_cost = getBucketValue(bucket, 'total_usd');
-                col_3.push('  ' + cprint.toLightGray(bucket, true) + ' - ' + cprint.toYellow(c_fn(bucket_cost, 0), true));
+                col_3.push(cprint.toLightGray(bucket, true) + ' - ' + cprint.toYellow(c_fn(bucket_cost, 0), true));
             });
+        col_3.push('');
     }
 
     let lines = [];
@@ -897,7 +924,7 @@ function to_decimal(in_number, in_col_width)
 
     let int_val = parseInt(in_number);
     let decimal_val = parseInt((in_number - int_val) * 100 + 0.5);
-    return str_pad(int_val + '.' + str_pad(decimal_val, 2, '0').substring(0, 2), in_col_width + 3, ' ', STR_PAD_LEFT);
+    return str_pad(int_val + '.' + str_pad(decimal_val, 2, '0', STR_PAD_LEFT).substring(0, 2), in_col_width + 3, ' ', STR_PAD_LEFT);
 }
 
 // ******************************
