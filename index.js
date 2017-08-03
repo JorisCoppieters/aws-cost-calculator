@@ -138,7 +138,7 @@ let g_NAT_PER_GB = 0.059;
 
 let g_ELB_USAGE_RATIO = 0.8;
 
-let g_USD_EXCHANGE_RATE = 0.7008;
+let g_USD_EXCHANGE_RATE = 0.74;
 let g_DAYS_IN_MONTH = 31;
 let g_DAY_OF_MONTH = new Date().getDate();
 
