@@ -5,7 +5,7 @@
 // ******************************
 //
 //
-// AWS COST CALCULATOR v1.1.1
+// AWS COST CALCULATOR v1.1.2
 //
 // 1.0.8
 // - Added more instance types
