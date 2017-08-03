@@ -8,7 +8,7 @@
 // Constants:
 // ******************************
 
-const c_VERSION = '1.1.2';
+const c_VERSION = '1.1.3';
 
 const c_MODE_HELP = '[HELP]';
 const c_MODE_VERSION = '[VERSION]';
