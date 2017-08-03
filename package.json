@@ -1,6 +1,6 @@
 {
   "name": "aws-cost-calculator",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "Calculate the future cost of your AWS setup",
   "bin": {
     "acc": "./index.js"
