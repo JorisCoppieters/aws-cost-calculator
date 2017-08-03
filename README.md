@@ -21,5 +21,5 @@ $ acc --schema "MY_FILE"
 Other options:
 * ```--full```: To get a full report
 * ```--buckets```: To print cost buckets
-* ```--days``` NUMBER: To specifiy the number of days to calculate over
+* ```--days [NUMBER]```: To specifiy the number of days to calculate over
 * ```--nzd```: To display the price in NZD
