@@ -14,12 +14,12 @@ var cprint = require('color-print');
 function printHelp (in_message) {
     if (in_message) {
         cprint.yellow(in_message);
-        console.log();
     }
 
-    cprint.rainbow('AWS Cost Calculator Help');
     console.log();
-    cprint.magenta('Version ' + c.VERSION);
+    console.log(cprint.toBackgroundMagenta(cprint.toWhite(' '.repeat(c.SCRIPT_NAME.length + 9), true)) + ' ' + cprint.toBackgroundMagenta(cprint.toWhite(' '.repeat(c.VERSION.length + 12), true)));
+    console.log(cprint.toBackgroundMagenta(cprint.toWhite('  ' + c.SCRIPT_NAME + ' Help  ', true)) + ' ' + cprint.toBackgroundMagenta(cprint.toWhite('  Version ' + c.VERSION + '  ', true)));
+    console.log(cprint.toBackgroundMagenta(cprint.toWhite(' '.repeat(c.SCRIPT_NAME.length + 9), true)) + ' ' + cprint.toBackgroundMagenta(cprint.toWhite(' '.repeat(c.VERSION.length + 12), true)));
     console.log();
     cprint.green('General Options:');
     console.log(cprint.toWhite('--help') + '\t\t\t' + cprint.toCyan('Show this menu'));
