@@ -136,9 +136,9 @@ let g_ELB_PER_HOUR = 0.028;
 let g_NAT_PER_HOUR = 0.059;
 let g_NAT_PER_GB = 0.059;
 
-let g_ELB_USAGE_RATIO = 0.8;
+let g_ELB_USAGE_RATIO = 1;
 
-let g_USD_EXCHANGE_RATE = 0.74;
+let g_USD_EXCHANGE_RATE = 0.73;
 let g_DAYS_IN_MONTH = 31;
 let g_DAY_OF_MONTH = new Date().getDate();
 
@@ -375,11 +375,11 @@ function calculateBucketValues (in_schema, in_num_days, in_full_report, in_spot_
                 incBucketArrayValue(ALL_BUCKET, 'period_instance_type_hours', instance_type, period_instance_on_demand_hours);
                 incBucketArrayValue(bucket, 'period_instance_type_hours', instance_type, period_instance_on_demand_hours);
 
-                if (period_instance_spot_hours > 0)
-                {
+                // if (period_instance_spot_hours > 0)
+                // {
                     incBucketArrayValue(ALL_BUCKET, 'period_instance_type_hours', 'spot', period_instance_spot_hours);
                     incBucketArrayValue(bucket, 'period_instance_type_hours', 'spot', period_instance_spot_hours);
-                }
+                // }
             });
         });
 
@@ -391,11 +391,23 @@ function calculateBucketValues (in_schema, in_num_days, in_full_report, in_spot_
             setBucketArrayValue(ALL_BUCKET, 'period_instance_type_hours', 't2.micro', Math.max(0,
                 getBucketArrayValue(ALL_BUCKET, 'period_instance_type_hours', 't2.micro')));
 
+            if (!getBucketArrayValue(ALL_BUCKET, 'period_instance_type_hours', 't2.micro')
+                && !getBucketArrayValue(ALL_BUCKET, 'period_instance_type_number', 't2.micro')) {
+                removeBucketArrayValue(ALL_BUCKET, 'period_instance_type_hours', 't2.micro');
+                removeBucketArrayValue(ALL_BUCKET, 'period_instance_type_number', 't2.micro');
+            }
+
             setBucketValue(free_tier_bucket, 'period_storage_hours', Math.max(0,
                 getBucketValue(free_tier_bucket, 'period_storage_hours')));
 
             setBucketArrayValue(free_tier_bucket, 'period_instance_type_hours', 't2.micro', Math.max(0,
                 getBucketArrayValue(free_tier_bucket, 'period_instance_type_hours', 't2.micro')));
+
+            if (!getBucketArrayValue(free_tier_bucket, 'period_instance_type_hours', 't2.micro')
+                && !getBucketArrayValue(free_tier_bucket, 'period_instance_type_number', 't2.micro')) {
+                removeBucketArrayValue(free_tier_bucket, 'period_instance_type_hours', 't2.micro');
+                removeBucketArrayValue(free_tier_bucket, 'period_instance_type_number', 't2.micro');
+            }
         }
 
         calculateCostsForBucket(ALL_BUCKET, {
@@ -721,6 +733,15 @@ function getBucketValue (in_bucket, in_key) {
 function getBucketArrayValue (in_bucket, in_key, in_idx) {
     let bucketArrayValue = getBucketValue(in_bucket, in_key) || [];
     return bucketArrayValue[in_idx];
+}
+
+// ******************************
+
+function removeBucketArrayValue (in_bucket, in_key, in_idx) {
+    let bucketArrayValue = getBucketValue(in_bucket, in_key) || [];
+    if (bucketArrayValue[in_idx] !== undefined) {
+        delete bucketArrayValue[in_idx];
+    }
 }
 
 // ******************************
