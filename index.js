@@ -628,7 +628,7 @@ function printCosts (in_num_days, in_nzd, in_full_report, in_print_buckets) {
 
     if (in_print_buckets)
     {
-        col_2.push(cprint.toCyan('BUCKETS:', true));
+        col_2.push(cprint.toCyan('BUCKETS (sub-totals):', true));
 
         Object.keys(g_BUCKETS)
             .filter(bucket => bucket !== ALL_BUCKET)
@@ -636,7 +636,7 @@ function printCosts (in_num_days, in_nzd, in_full_report, in_print_buckets) {
                 if (idx % 2 !== 0 || idx >= max_bucket_lines) {
                     return;
                 }
-                let bucket_cost = getBucketValue(bucket, 'total_usd');
+                let bucket_cost = getBucketValue(bucket, 'subtotal');
                 col_2.push('  ' + cprint.toLightGray(bucket, true) + ' - ' + cprint.toYellow(c_fn(bucket_cost, 0), true));
             });
         col_2.push('');
@@ -672,7 +672,7 @@ function printCosts (in_num_days, in_nzd, in_full_report, in_print_buckets) {
                 if (idx % 2 !== 1 || idx >= max_bucket_lines) {
                     return;
                 }
-                let bucket_cost = getBucketValue(bucket, 'total_usd');
+                let bucket_cost = getBucketValue(bucket, 'subtotal');
                 col_3.push(cprint.toLightGray(bucket, true) + ' - ' + cprint.toYellow(c_fn(bucket_cost, 0), true));
             });
         col_3.push('');
