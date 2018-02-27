@@ -9,7 +9,7 @@
 // ******************************
 
 const c_SCRIPT_NAME = 'AWS Cost Calculator';
-const c_VERSION = '1.1.7';
+const c_VERSION = '1.1.8';
 
 const c_MODE_HELP = '[HELP]';
 const c_MODE_VERSION = '[VERSION]';
