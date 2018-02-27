@@ -311,6 +311,7 @@ function calculateBucketValues (in_schema, in_num_days, in_full_report, in_spot_
 
             service_instances.forEach(instance_config => {
                 let instance_type = jlib_get_property(instance_config, 'type', 't2.micro');
+                let instance_count = jlib_get_property(instance_config, 'count', 1);
 
                 let instance_ssd_storage = jlib_get_property(instance_config, 'ssd', 0);
                 let instance_ebs_storage = jlib_get_property(instance_config, 'ebs', 0);
@@ -348,7 +349,9 @@ function calculateBucketValues (in_schema, in_num_days, in_full_report, in_spot_
                     }
                 }
 
-                let instance_uptime_hours = in_num_days * (instance_days_per_week / 7) * instance_hours_per_day + instance_extra_hours;
+                let instance_uptime_hours_before = in_num_days * (instance_days_per_week / 7) * instance_hours_per_day + instance_extra_hours;
+                let instance_uptime_hours = (in_num_days * (instance_days_per_week / 7) * instance_hours_per_day + instance_extra_hours) * instance_count;
+
                 let period_storage_hours_inc = instance_storage * instance_uptime_hours;
 
                 incBucketValue(ALL_BUCKET, 'period_storage_hours', period_storage_hours_inc);
@@ -585,9 +588,9 @@ function printCosts (in_num_days, in_nzd, in_full_report, in_print_buckets) {
         col_1_col_4.push(cprint.toLightYellow(c_fn(total_instance_cost, max_price_length), true));
 
         col_1 = combine_columns(col_1, col_1_col_1, 0);
-        col_1 = combine_columns(col_1, col_1_col_2, 5);
-        col_1 = combine_columns(col_1, col_1_col_3, 5);
-        col_1 = combine_columns(col_1, col_1_col_4, 5);
+        col_1 = combine_columns(col_1, col_1_col_2, 4);
+        col_1 = combine_columns(col_1, col_1_col_3, 4);
+        col_1 = combine_columns(col_1, col_1_col_4, 4);
         col_1.push('');
         col_1.push('');
     }
