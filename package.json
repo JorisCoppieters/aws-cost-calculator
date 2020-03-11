@@ -21,10 +21,10 @@
   "homepage": "https://github.com/JorisCoppieters/aws-cost-calculator#readme",
   "dependencies": {
     "color-print": "^1.0.2",
-    "minimist": "^1.2.0"
+    "minimist": "^1.2.2"
   },
   "devDependencies": {
     "color-print": "^1.0.2",
-    "minimist": "^1.2.0"
+    "minimist": "^1.2.2"
   }
 }
